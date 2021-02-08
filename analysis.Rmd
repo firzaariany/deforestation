@@ -93,6 +93,7 @@ risk_deforest = ggplot(data = soy_aggr_sort, aes(x = STATE, y = risk_deforest)) 
               axis_title_size = 12,
               base_family = "Calibri")
 
+risk_deforest
 ```
 
 ## Which companies from Moto Grosso that is exposed to deforestation?
@@ -184,6 +185,8 @@ mg_deforest_plot = ggplot(data = mg_deforest, aes(fill = ECONOMIC.BLOC,
   labs(title = "Exporting companies linked to deforestation", fill = "Economic blocks") +
   coord_flip() +
   theme_ipsum(base_size = 9, axis_title_size = 12, base_family = "Calibri")
+
+mg_deforest_plot
 ```
 
 The exporting companies Bunge and Mitsui & Co. are the top 2 companies that cause
