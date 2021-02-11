@@ -1,0 +1,7 @@
+name: "Deforestation"
+output_dir: "docs"
+navbar:
+  title: "Deforestation"
+  left:
+  - text: "Home"
+  href: analysis.html

@@ -1,22 +1,17 @@
 ---
-title: "Analysing the link between soybean production and deforestation"
-author: "Firza Riany"
-date: "04/02/2021"
+title: "Deforestation"
 output:
-  word_document: default
-  html_document: default
-editor_options: 
-  markdown: 
-    wrap: 72
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
 ---
 
 # Description
 
-Using the data set of export-import of soy production, I was asked to
-identify:\
+Using the data set of export-import of soy production, I was asked to identify:\
 1. The largest soy producing state in Brazil.\
-2. The soy exporting companies from this state that are exposed to
-deforestation.
+2. The soy exporting companies from this state that are exposed to deforestation.
 
 ```{r libraries, message=FALSE, warning=FALSE}
 library(ggplot2) # for visualization
@@ -41,7 +36,7 @@ Procedures:\
 
 ```{r aggregate sum, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
 # Sum of soy production per state
-soy_aggr = aggregate(soy_df$SOY_EQUIVALENT_tons,
+soy_aggr = aggregate(soy_df$SOY_EQUIVALENT_TONNES,
                      by = list(STATE = soy_df$STATE),
                      FUN = sum)
 
@@ -85,6 +80,8 @@ soy_product = ggplot(data = soy_aggr_sort, aes(x = STATE, y = scale)) +
               axis_title_size = 12,
               base_family = "Calibri")
 
+soy_product
+
 # Histogram of total deforestation risk
 risk_deforest = ggplot(data = soy_aggr_sort, aes(x = STATE, y = risk_deforest)) +
   geom_bar(stat = "identity", fill = "#F53434", alpha = 0.6, width = 0.6) +
@@ -101,43 +98,30 @@ risk_deforest = ggplot(data = soy_aggr_sort, aes(x = STATE, y = risk_deforest)) 
 risk_deforest
 ```
 
-It is shown that Moto Grosso is the state with the largest total soy
-production.
+It is shown that Moto Grosso is the state with the largest total soy production.
 
 ## Which companies from Moto Grosso that is exposed to deforestation?
 
 Procedures:\
 1. I will select the exporting companies present in Moto Grosso.\
-2. With the assumption *each company has the same probability to cause
-deforestation* I will calculate the deforestation for producing 1 ton of
-soy bean.\
-3. I will define the threshold to say whether the companies are posing a
-high deforestation risk.
+2. With the assumption *each company has the same probability to cause deforestation* I will calculate the deforestation for producing 1 ton of soy bean.\
+3. I will define the threshold to say whether the companies are posing a high deforestation risk.
 
-I found that Moto Grosso is the state in Brazil with the largest soy
-production, namely 25 million tons of soy. So, firstly I will answer the
-question how many exporting companies are there in Moto Grosso?
+I found that Moto Grosso is the state in Brazil with the largest soy production, namely 25 million tons of soy. So, firstly I will answer the question how many exporting companies are there in Moto Grosso?
 
 ```{r filter, message=FALSE, warning=FALSE}
 mg_companies = soy_df %>%
   filter(STATE == "MATO GROSSO")
 
 # Calculating the deforestation caused by the production of 1 ton of soy
-mg_companies$def_per_ton = 
-  mg_companies$SOY_DEFORESTATION_5_YEAR_ANNUAL_RISK_HECTARES/mg_companies$SOY_EQUIVALENT_tons
+mg_companies$def_per_ton = mg_companies$SOY_DEFORESTATION_5_YEAR_ANNUAL_RISK_HECTARES/mg_companies$SOY_EQUIVALENT_TONNES
 ```
 
-I calculated the deforestation risk to produce 1 ton of soy
-(def_per_ton) because I wanted to compare the companies in the same
-scale (i.e. deforestation risk). To understand which companies that pose
-a high risk to deforestation, I have to determine a cutoff/threshold
-value. Companies are considered to pose deforestation risk when their
-def_per_ton is larger than the cutoff value.
+I calculated the deforestation risk to produce 1 ton of soy (def_per_ton) because I wanted to compare the companies in the same scale (i.e. deforestation risk). To understand which companies that pose a high risk to deforestation, I have to determine a cutoff/threshold value. Companies are considered to pose deforestation risk when their def_per_ton is larger than the cutoff value.
 
 I determined the cutoff value based on:\
 1. The deforestation target in 2020 = 400 000 ha.\
-2. Brazilian forest areas in 2020 = 49 662 000 ha 3. The yield of
-soybean in 2020 = 3.41 tons / ha.
+2. Brazilian forest areas in 2020 = 49 662 000 ha 3. The yield of soybean in 2020 = 3.41 tons / ha.
 
 ```{r cutoff}
 target = 400000
@@ -152,26 +136,18 @@ cutoff
 ```
 
 The logic behind the calculation:\
-The deforestation target in 2020 is 400 000 ha. So, out of 49 million ha
-of forest, the companies are 'allowed' to clear 0.008 of Brazilian
-forests (the result of target / forest areas).
+The deforestation target in 2020 is 400 000 ha. So, out of 49 million ha of forest, the companies are 'allowed' to clear 0.008 of Brazilian forests (the result of target / forest areas).
 
-The optimal soy production is 3.41 tons / ha, so 0.008 / 3.41 yields the
-amount of forest cleared to optimally produce 1 ton of soy. That is then
-the cutoff value I will use in my calculation.
+The optimal soy production is 3.41 tons / ha, so 0.008 / 3.41 yields the amount of forest cleared to optimally produce 1 ton of soy. That is then the cutoff value I will use in my calculation.
 
-So, I will filter the companies whose def_per_ton is larger than cutoff
-(0.002362)
+So, I will filter the companies whose def_per_ton is larger than cutoff (0.002362)
 
 ```{r deforestation, message=FALSE, warning=FALSE}
 mg_deforest = mg_companies %>%
   filter(def_per_ton > cutoff)
 ```
 
-There are 68 companies that potentially pose a risk to deforestation
-from Moto Grosso state. So, now I want to link these companies to the
-economic block. The aim is to see which blocks that directly
-support/drive deforestation in this state.
+There are 68 companies that potentially pose a risk to deforestation from Moto Grosso state. So, now I want to link these companies to the economic block. The aim is to see which blocks that directly support/drive deforestation in this state.
 
 ```{r stack countries, fig.height=6, fig.width=12, message=FALSE, warning=FALSE}
 # Tidying the strings in the dataset
@@ -203,16 +179,9 @@ mg_deforest_plot = ggplot(data = mg_deforest, aes(fill = ECONOMIC.BLOC,
 mg_deforest_plot
 ```
 
-The exporting companies Bunge and Mitsui & Co. are the top 2 companies
-that cause the highest deforestation to produce 1 ton of soy. These
-companies export soy to China that makes China the biggest economic
-block that support deforestation for soybean plantation in Moto Grosso.
-Beside China, the European Union also sources its soybean from Bunge
-which makes the EU the driver for deforestation in Moto Grosso.
+The exporting companies Bunge and Mitsui & Co. are the top 2 companies that cause the highest deforestation to produce 1 ton of soy. These companies export soy to China that makes China the biggest economic block that support deforestation for soybean plantation in Moto Grosso. Beside China, the European Union also sources its soybean from Bunge which makes the EU the driver for deforestation in Moto Grosso.
 
-If I have to communicate the result to a sustainability officer from
-China, I would also show him/her the Brazilian exporting companies that
-China is partnering with.
+If I have to communicate the result to a sustainability officer from China, I would also show him/her the Brazilian exporting companies that China is partnering with.
 
 ```{r partner companies, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
 # Companies in Moto Grosso that are exporting only to China
@@ -220,7 +189,7 @@ mg_china = mg_companies %>%
   filter(COUNTRY.OF.IMPORT == "CHINA (MAINLAND)")
 
 # Exporting companies that supply the soybean to China
-mg_china_supply = aggregate(mg_china$SOY_EQUIVALENT_tons,
+mg_china_supply = aggregate(mg_china$SOY_EQUIVALENT_TONNES,
                             by = list(EXPORTER.GROUP = mg_china$EXPORTER.GROUP),
                             FUN = sum)
 
@@ -284,34 +253,13 @@ deforest = ggplot(data = top_suppliers_2, aes(x = EXPORTER.GROUP,
 deforest
 ```
 
-I identified the top 10 soy exporting companies that are partnering with
-China. Cargill is the exporting company that exports the most. It
-exports 1.5 million tons of soy to China only. Other companies with the
-most exports are Bunge, Amaggi and ADM. However, these 10 companies are
-not deforestation-free. Each one of them are associated with
-deforestation in Mato Grosso.
+I identified the top 10 soy exporting companies that are partnering with China. Cargill is the exporting company that exports the most. It exports 1.5 million tons of soy to China only. Other companies with the most exports are Bunge, Amaggi and ADM. However, these 10 companies are not deforestation-free. Each one of them are associated with deforestation in Mato Grosso.
 
-It is indicated by the deforestation risk in every 1 ton of soy
-production in these companies. With the cutoff value = 0.00020, all the
-exporting companies from Mato Grosso are not deforestation-free. They
-cannot comply with Brazil's ambitious deforestation target (400 000 ha
-in 2020, even though in reality they caused deforestation in 110 000 ha
-of forest). However, there are two companies, namely Engelhart and
-Mitsubishi, with deforestation risk a bit over the cutoff value. If I
-have to recommend which companies that the officer should consider if he
-wants to source a sustainable soybean, I would recommend Engelhart and
-Mitsubishi.
+It is indicated by the deforestation risk in every 1 ton of soy production in these companies. With the cutoff value = 0.00020, all the exporting companies from Mato Grosso are not deforestation-free. They cannot comply with Brazil's ambitious deforestation target (400 000 ha in 2020, even though in reality they caused deforestation in 110 000 ha of forest). However, there are two companies, namely Engelhart and Mitsubishi, with deforestation risk a bit over the cutoff value. If I have to recommend which companies that the officer should consider if he wants to source a sustainable soybean, I would recommend Engelhart and Mitsubishi.
 
 ## Estimation of carbon emission
 
-I have an idea to estimate the possible carbon emission from
-deforestation given the exporting company's total soy production. I
-found an equation that can return the equivalent CO2 emission from
-deforestation using the amount of area changed (ha) and the potential
-carbon stock in the area (C/ha) (USAID 2014). I sourced the carbon stock
-for Moto Grosso from Nogueira et al. 2009, and it was 159.7 mgC/ha. So I
-will try to estimate the possible carbon emission caused by these top 10
-soy exporting companies.
+I have an idea to estimate the possible carbon emission from deforestation given the exporting company's total soy production. I found an equation that can return the equivalent CO2 emission from deforestation using the amount of area changed (ha) and the potential carbon stock in the area (C/ha) (USAID 2014). I sourced the carbon stock for Moto Grosso from Nogueira et al. 2009, and it was 159.7 mgC/ha. So I will try to estimate the possible carbon emission caused by these top 10 soy exporting companies.
 
 ```{r carbon, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
 c_stock = 159.7
@@ -360,16 +308,4 @@ emission_per_ton = ggplot(data = top_suppliers_2, aes(x = EXPORTER.GROUP,
 emission_per_ton
 ```
 
-I calculated the total possible emission for each company. In this
-calculation, I summed the deforestation risk for each company that are
-present in Moto Grosso. Then I multiply the total deforestation risk
-with the carbon stock in the area (159.7 mgC/ha). The result indicates
-that Bunge emits the most due to deforestation. In terms of
-deforestation caused by the production of 1 ton of soy, Bunge still
-emits the most. It is followed by Glencore in. The smallest emission is
-caused by Mitsubishi and Engelhart, which I woud recommend to the
-officer if he wants to partner with deforestation-free soybean exporting
-companies. However, I would still do further research involving
-benchmarking with exporting companies that are exporting similar amount
-of soy and benchmarking with the companies that are present in other
-states in Brazil.
+I calculated the total possible emission for each company. In this calculation, I summed the deforestation risk for each company that are present in Moto Grosso. Then I multiply the total deforestation risk with the carbon stock in the area (159.7 mgC/ha). The result indicates that Bunge emits the most due to deforestation. In terms of deforestation caused by the production of 1 ton of soy, Bunge still emits the most. It is followed by Glencore in. The smallest emission is caused by Mitsubishi and Engelhart, which I woud recommend to the officer if he wants to partner with deforestation-free soybean exporting companies. However, I would still do further research involving benchmarking with exporting companies that are exporting similar amount of soy and benchmarking with the companies that are present in other states in Brazil.
